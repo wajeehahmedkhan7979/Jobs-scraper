@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Job Scraper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0073b1;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input, select, button {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #0073b1;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005b8a;
+        }
+
+        #message {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #download-link {
+            display: none;
+        }
+
+        #folder-picker {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LinkedIn Job Scraper</h1>
+        <form id="scrape-form">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <label for="job_role">Job Role:</label>
+            <input type="text" id="job_role" name="job_role" required>
+            <label for="location">Location (Optional):</label>
+            <input type="text" id="location" name="location">
+            <label for="date_posted">Date Posted (Optional):</label>
+            <select id="date_posted" name="date_posted">
+                <option value="Any time">Any time</option>
+                <option value="Past month">Past month</option>
+                <option value="Past week">Past week</option>
+                <option value="Past 24 hours">Past 24 hours</option>
+            </select>
+            <label for="file_path">Save As (Choose Folder):</label>
+            <input type="file" id="folder-picker" webkitdirectory directory multiple>
+            <input type="file" id="file_path" name="file_path" placeholder="Select file(e.g., job_role.xlsx)" required>
+            <button type="submit">Scrape Jobs</button>
+        </form>
+        <div id="message"></div>
+        <div id="download-link"></div>
+    </div>
+
+    <script>
+        document.getElementById('file_path').addEventListener('focus', function () {
+            document.getElementById('folder-picker').click();
+        });
+
+        document.getElementById('folder-picker').addEventListener('change', function (event) {
+            const filePathInput = document.getElementById('file_path');
+            const files = event.target.files;
+            if (files.length > 0) {
+                const folderPath = files[0].webkitRelativePath.split('/')[0];
+                filePathInput.value = folderPath + '/' + filePathInput.value;
+            }
+        });
+
+        document.getElementById('scrape-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('http://127.0.0.1:5000/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('message').textContent = result.message || result.error;
+                if (result.file_path) {
+                    document.getElementById('download-link').style.display = 'block';
+                    document.getElementById('download-link').innerHTML = `
+                        <a href="http://127.0.0.1:5000/download/${result.file_path}" download>Download Excel file</a>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('message').textContent = 'An error occurred: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html>
